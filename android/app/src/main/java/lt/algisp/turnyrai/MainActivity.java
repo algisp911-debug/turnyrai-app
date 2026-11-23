@@ -37,6 +37,11 @@ public class MainActivity extends Activity {
     static final String REGISTRY_URL =
             "https://raw.githubusercontent.com/algisp911-debug/turnyrai-app/main/grupes.json";
 
+    static final String RELEASES_API =
+            "https://api.github.com/repos/algisp911-debug/turnyrai-app/releases/latest";
+    static final String APK_URL =
+            "https://github.com/algisp911-debug/turnyrai-app/releases/latest/download/Turnyrai.apk";
+
     static final String SETUP_PAGE = "file:///android_asset/setup.html";
     static final String OFFLINE_PAGE = "file:///android_asset/offline.html";
 
@@ -76,7 +81,53 @@ public class MainActivity extends Activity {
             web.restoreState(savedInstanceState);
         } else {
             openStart();
+            checkUpdate();
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Atnaujinimai: tikrinama ne dažniau kaip kartą per 12 val.
+
+    private int myVersion() {
+        try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionCode; }
+        catch (Exception e) { return Integer.MAX_VALUE; }
+    }
+
+    private void checkUpdate() {
+        long now = System.currentTimeMillis();
+        if (now - prefs.getLong("updCheck", 0) < 12L * 3600 * 1000) return;
+        prefs.edit().putLong("updCheck", now).apply();
+        new Thread(() -> {
+            try {
+                HttpURLConnection c = (HttpURLConnection) new URL(RELEASES_API).openConnection();
+                c.setConnectTimeout(6000);
+                c.setReadTimeout(6000);
+                c.setRequestProperty("Accept", "application/vnd.github+json");
+                if (c.getResponseCode() != 200) return;
+                JSONObject j = new JSONObject(read(c.getInputStream()));
+                String tag = j.optString("tag_name", "");          // pvz. v1.5
+                int dot = tag.lastIndexOf('.');
+                if (dot < 0) return;
+                int latest = Integer.parseInt(tag.substring(dot + 1));
+                if (latest > myVersion()) {
+                    String ver = tag.startsWith("v") ? tag.substring(1) : tag;
+                    runOnUiThread(() -> showUpdate(ver));
+                }
+            } catch (Exception ignored) { }
+        }).start();
+    }
+
+    private void showUpdate(String ver) {
+        if (isFinishing()) return;
+        new AlertDialog.Builder(this)
+                .setTitle("Yra nauja versija " + ver)
+                .setMessage("Atsisiųskite ir įdiekite ją ant viršaus – grupė ir nustatymai išliks.")
+                .setPositiveButton("Atnaujinti", (d, w) -> {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(APK_URL))); }
+                    catch (Exception ignored) { }
+                })
+                .setNegativeButton("Vėliau", null)
+                .show();
     }
 
     @Override
