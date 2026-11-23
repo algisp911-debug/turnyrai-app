@@ -22,7 +22,7 @@ iPhone šios programėlės įdiegti negalima. iPhone naudotojai atsidaro grupės
 ```json
 {
   "grupes": {
-    "ZALGIRIS2018": { "pavadinimas": "Žalgiris 2018", "url": "https://script.google.com/macros/s/…/exec" }
+    "KODAS": { "pavadinimas": "Grupės pavadinimas", "url": "https://script.google.com/macros/s/…/exec" }
   }
 }
 ```
