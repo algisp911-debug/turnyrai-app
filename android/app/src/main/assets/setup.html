@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="lt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;font-family:-apple-system,Roboto,Arial,sans-serif;color:#1d2733;
+       background:repeating-linear-gradient(180deg,#e4eee6 0 70px,#ecf3ed 70px 140px);display:flex;flex-direction:column}
+  .top{background:#1f6f4a;color:#fff;padding:48px 24px 36px;text-align:center}
+  .logo{font-size:64px;line-height:1}
+  h1{margin:12px 0 4px;font-size:28px}
+  .top p{margin:0;opacity:.85}
+  .card{background:#fff;margin:-18px 16px 16px;border-radius:18px;padding:22px 18px;box-shadow:0 4px 18px rgba(0,0,0,.08)}
+  label{display:block;font-size:14px;color:#4d6656;margin-bottom:6px;font-weight:600}
+  input{width:100%;font-size:20px;padding:14px;border:2px solid #d6e2d9;border-radius:12px;text-transform:uppercase;letter-spacing:.04em}
+  input:focus{outline:none;border-color:#1f6f4a}
+  button{display:block;width:100%;margin-top:14px;border:0;border-radius:12px;padding:16px;font-size:17px;font-weight:700;background:#1f6f4a;color:#fff}
+  button:disabled{opacity:.6}
+  .err{color:#c0392b;font-weight:600;margin-top:12px;min-height:1.2em}
+  .ok{margin-top:14px;padding:14px;border-radius:12px;background:#e6f4ec;display:none}
+  .ok b{font-size:18px}
+  .note{font-size:13px;color:#6b7c72;line-height:1.5;margin:4px 20px 24px}
+</style></head>
+<body>
+  <div class="top"><div class="logo">⚽🏆</div><h1>Turnyrai</h1><p>Taurių eilė jūsų grupei</p></div>
+  <div class="card">
+    <label for="code">Grupės kodas</label>
+    <input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="pvz. ZALGIRIS2018">
+    <button id="go" onclick="find()">Prisijungti</button>
+    <div class="err" id="err"></div>
+    <div class="ok" id="ok">Grupė: <b id="gname"></b><button onclick="connect()">Atidaryti</button></div>
+  </div>
+  <p class="note">Grupės kodą gausite iš trenerio arba grupės tėvų pokalbyje.<br>
+  Grupę vėliau galima pakeisti: spauskite telefono mygtuką „Atgal“ → „Keisti grupę“.</p>
+<script>
+var found = null;
+function find(){
+  var v = document.getElementById('code').value;
+  var b = document.getElementById('go'), e = document.getElementById('err');
+  e.textContent = ''; document.getElementById('ok').style.display='none';
+  b.disabled = true; b.textContent = 'Ieškoma…';
+  setTimeout(function(){
+    var r = {};
+    try { r = JSON.parse(Turnyrai.lookup(v)); } catch(x) { r = {ok:false, err:'Klaida'}; }
+    b.disabled = false; b.textContent = 'Prisijungti';
+    if (!r.ok){ e.textContent = r.err || 'Nepavyko'; return; }
+    found = r;
+    document.getElementById('gname').textContent = r.name;
+    document.getElementById('ok').style.display = 'block';
+  }, 30);
+}
+function connect(){ if (found) Turnyrai.connect(found.name, found.url); }
+document.getElementById('code').addEventListener('keydown', function(e){ if (e.key === 'Enter') find(); });
+</script>
+</body></html>
