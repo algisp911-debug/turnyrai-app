@@ -43,6 +43,8 @@ public class MainActivity extends Activity {
     private WebView web;
     private SharedPreferences prefs;
     private volatile boolean onLocalPage = true;
+    /** Po prisijungimo išvalyti istoriją, kad „Atgal“ negrąžintų į kodo įvedimą. */
+    private boolean clearOnFinish = false;
 
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
@@ -85,12 +87,12 @@ public class MainActivity extends Activity {
 
     private void openStart() {
         String url = prefs.getString("url", null);
-        if (url != null) web.loadUrl(url);
+        if (url != null) { clearOnFinish = true; web.loadUrl(url); }
         else web.loadUrl(SETUP_PAGE);
     }
 
     private void changeGroup() {
-        prefs.edit().remove("url").remove("name").apply();
+        prefs.edit().remove("url").remove("name").commit();
         web.clearHistory();
         web.loadUrl(SETUP_PAGE);
     }
@@ -99,7 +101,8 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         String cur = web.getUrl();
         if (cur != null && cur.startsWith(SETUP_PAGE)) {
-            super.onBackPressed();
+            if (prefs.getString("url", null) != null) openStart();
+            else super.onBackPressed();
             return;
         }
         if (web.canGoBack() && cur != null && !cur.startsWith(OFFLINE_PAGE)) {
@@ -125,6 +128,15 @@ public class MainActivity extends Activity {
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
             onLocalPage = url != null && url.startsWith("file:///android_asset/");
             super.onPageStarted(view, url, favicon);
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+            if (clearOnFinish && url != null && !url.startsWith("file:///android_asset/")) {
+                clearOnFinish = false;
+                view.clearHistory();
+            }
         }
 
         @Override
@@ -185,9 +197,9 @@ public class MainActivity extends Activity {
         public void connect(String name, String url) {
             if (!onLocalPage) return;
             if (url == null || !url.startsWith("https://script.google.com/")) return;
-            prefs.edit().putString("url", url).putString("name", name == null ? "" : name).apply();
+            prefs.edit().putString("url", url).putString("name", name == null ? "" : name).commit();
             runOnUiThread(() -> {
-                web.clearHistory();
+                clearOnFinish = true;
                 web.loadUrl(url);
             });
         }
